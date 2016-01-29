@@ -1,18 +1,163 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <pthread.h>
+#include <memory.h>
 #include "Video.h"
 #include "DVDEmu.h"
+
+#define OPCODE_STOP 1
+#define OPCODE_PLAY 2
+#define OPCODE_PAUSE 3
+#define OPCODE_UNPAUSE 4
 
 /* Emulator state */
 struct video_state
 {
+    pthread_t thread;
+    pthread_mutex_t lock;
+    unsigned char queue[256];
+    unsigned int queue_pos;
     unsigned int power_state;
     unsigned int playing_state;
     unsigned int paused_state;
+    unsigned int pause_delay;
     unsigned int chapter;
     unsigned int max_chapter;
     char * dvd_path;
 } video_state;
+
+void *VideoThread( void *state )
+{
+    /* Get state to read from */
+    struct video_state *private_state = (struct video_state *)state;
+    int loaded = 0;
+
+    while( true )
+    {
+        /* Process video commands, safe to read this because
+         * if it is non-zero we will try locking anyway. */
+        if( private_state->queue_pos > 0 )
+        {
+            pthread_mutex_lock(&private_state->lock);
+            unsigned int amount = 0;
+            unsigned int opcode = private_state->queue[0];
+            unsigned int arg = private_state->queue[1];
+            switch( opcode )
+            {
+                case OPCODE_STOP:
+                    /* Stop */
+                    amount = 1;
+                    break;
+                case OPCODE_PAUSE:
+                    /* Pause */
+                    amount = 1;
+                    break;
+                case OPCODE_UNPAUSE:
+                    /* Pause */
+                    amount = 1;
+                    break;
+                case OPCODE_PLAY:
+                    /* Seek */
+                    amount = 2;
+                    break;
+            }
+
+            /* Remove if needed */
+            if( amount < private_state->queue_pos )
+            {
+                memmove(&private_state->queue[0], &private_state->queue[amount], private_state->queue_pos - amount);
+            }
+            private_state->queue_pos -= amount;
+
+            pthread_mutex_unlock(&private_state->lock);
+
+            /* Perform operation */
+            switch( opcode )
+            {
+                case OPCODE_STOP:
+                    /* Stop */
+                    if( loaded )
+                    {
+                        exec_shell("./control.sh stop &");
+                        sleep( 1 );
+                        exec_shell("killall dbus-daemon 2> /dev/null");
+                        exec_shell("killall omxplayer 2> /dev/null");
+                        exec_shell("killall omxplayer.bin 2> /dev/null");
+                        loaded = 0;
+                    }
+                    break;
+                case OPCODE_PAUSE:
+                    /* Pause */
+                    if( loaded )
+                    {
+                        exec_shell("./control.sh pause &");
+                    }
+                    break;
+                case OPCODE_UNPAUSE:
+                    /* Pause */
+                    if( loaded )
+                    {
+                        if( private_state->pause_delay )
+                        {
+                            printf("Sleeping %d ms!\n", private_state->pause_delay);
+                            usleep( private_state->pause_delay * 1000 );
+                        }
+                        exec_shell("./control.sh pause &");
+                    }
+                    break;
+                case OPCODE_PLAY:
+                    /* Play */
+                    if( !loaded )
+                    {
+                        char syscall[256];
+                        sprintf(syscall, "omxplayer -b --no-osd %s%02d.m4v >/dev/null &", private_state->dvd_path, arg);
+                        exec_shell(syscall);
+                        sleep( 1 );
+                        loaded = 1;
+                    }
+                    break;
+            }
+        }
+        else
+        {
+            /* Sleep for a bit */
+            usleep( 10000 );
+        }
+    }
+}
+
+void VideoThreadAction( unsigned int opcode, unsigned int argument )
+{
+    pthread_mutex_lock(&video_state.lock);
+
+    switch(opcode)
+    {
+        case OPCODE_STOP:
+            /* Stop */
+            video_state.queue[video_state.queue_pos] = OPCODE_STOP;
+            video_state.queue_pos++;
+            break;
+        case OPCODE_PAUSE:
+            /* Pause */
+            video_state.queue[video_state.queue_pos] = OPCODE_PAUSE;
+            video_state.queue_pos++;
+            break;
+        case OPCODE_UNPAUSE:
+            /* Pause */
+            video_state.queue[video_state.queue_pos] = OPCODE_UNPAUSE;
+            video_state.queue_pos++;
+            break;
+        case OPCODE_PLAY:
+            /* Seek */
+            video_state.queue[video_state.queue_pos] = OPCODE_PLAY;
+            video_state.queue_pos++;
+            video_state.queue[video_state.queue_pos] = argument;
+            video_state.queue_pos++;
+            break;
+    }
+
+    pthread_mutex_unlock(&video_state.lock);
+}
 
 void VideoInit( char * path, int chapters )
 {
@@ -22,8 +167,20 @@ void VideoInit( char * path, int chapters )
     video_state.chapter = 1;
     video_state.dvd_path = path;
     video_state.max_chapter = chapters;
+    video_state.pause_delay = 0;
 
     verbose_printf( "Disc has %d chapters.\n", video_state.max_chapter );
+
+    /* Start video playback thread */
+    memset( video_state.queue, 0, sizeof(video_state.queue) );
+    video_state.queue_pos = 0;
+    pthread_mutex_init(&video_state.lock, NULL);
+    pthread_create(&video_state.thread, NULL, VideoThread, &video_state);
+}
+
+void VideoSetPauseDelay( unsigned int milliseconds )
+{
+    video_state.pause_delay = milliseconds;
 }
 
 void PowerOn()
@@ -80,7 +237,7 @@ void Pause()
     {
         verbose_printf( "* Enter paused state.\n" );
 
-        exec_shell("./control.sh pause &");
+        VideoThreadAction( OPCODE_PAUSE, 0 );
 
         video_state.playing_state = 1;
         video_state.paused_state = 1;
@@ -95,7 +252,7 @@ void Unpause()
     {
         verbose_printf( "* Exit paused state.\n" );
 
-        exec_shell("./control.sh pause &");
+        VideoThreadAction( OPCODE_UNPAUSE, 0 );
 
         video_state.playing_state = 1;
         video_state.paused_state = 0;
@@ -112,19 +269,17 @@ int SeekToChapter( unsigned int chapter )
             verbose_printf( "* Seek to chapter %d.\n", chapter );
 
             /* Kill player */
-            exec_shell("./control.sh stop 2>/dev/null &");
-            sleep( 1 );
-            exec_shell("killall dbus-daemon");
+            VideoThreadAction( OPCODE_STOP, 0 );
 
             /* Seek */
-            char syscall[256];
-            sprintf(syscall, "omxplayer -b --no-osd %s%02d.m4v >/dev/null &", video_state.dvd_path, chapter);
-            exec_shell(syscall);
+            VideoThreadAction( OPCODE_PLAY, chapter );
             video_state.playing_state = 1;
-            sleep( 1 );
 
             /* Repause if needed */
-            if( video_state.paused_state ) { exec_shell("./control.sh pause 2>/dev/null &"); }
+            if( video_state.paused_state )
+            {
+                VideoThreadAction( OPCODE_PAUSE, 0 );
+            }
 
             video_state.chapter = chapter;
             return 1;
@@ -152,9 +307,7 @@ void Stop()
 
         verbose_printf( "* Enter idle state.\n" );
 
-        exec_shell("./control.sh stop &");
-        sleep(1);
-        exec_shell("killall dbus-daemon");
+        VideoThreadAction( OPCODE_STOP, 0 );
 
         video_state.playing_state = 0;
         video_state.paused_state = 0;

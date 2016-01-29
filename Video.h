@@ -2,6 +2,7 @@
 #define __VIDEO_H
 
 void VideoInit( char * path, int chapters );
+void VideoSetPauseDelay( unsigned int milliseconds );
 
 void PowerOn();
 void PowerOff();
