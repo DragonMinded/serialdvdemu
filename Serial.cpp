@@ -23,6 +23,9 @@ int OpenSerial( const char *port, int baud, int parity )
 
     switch( baud )
     {
+        case 4800:
+            rate = B4800;
+            break;
         case 9600:
             rate = B9600;
             break;
@@ -49,7 +52,18 @@ int OpenSerial( const char *port, int baud, int parity )
     memset(&tio,0,sizeof(tio));
     tio.c_iflag=0;
     tio.c_oflag=0;
-    tio.c_cflag=CS8|CREAD|PARENB|CLOCAL;
+    if( parity == PARITY_EVEN )
+    {
+        tio.c_cflag=CS8|CREAD|PARENB|CLOCAL;
+    }
+    else if( parity == PARITY_ODD )
+    {
+        tio.c_cflag=CS8|CREAD|PARENB|PARODD|CLOCAL;
+    }
+    else
+    {
+        tio.c_cflag=CS8|CREAD|CLOCAL;
+    }
     tio.c_lflag=0;
     tio.c_cc[VMIN]=1;
     tio.c_cc[VTIME]=0;
@@ -73,7 +87,7 @@ uint64_t getMS()
     return (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
 }
 
-bool ReadFile ( int file, void *buf, uint32_t length, uint32_t *readAmt, void *reserved )
+bool ReadFile( int file, void *buf, uint32_t length, uint32_t *readAmt, void *reserved )
 {
     uint64_t start = getMS();
 
@@ -137,7 +151,7 @@ bool WriteFile( int file, const void * const buf, uint32_t length, uint32_t *wri
     }
 }
 
-void SetFilePointer ( int file, int off, void *reserved, int origin )
+void SetFilePointer( int file, int off, void *reserved, int origin )
 {
     lseek( file, off, origin );
 }
@@ -153,8 +167,7 @@ bool PurgeComm( int serial )
     do
     {
         unsigned char data[1024];
-        uint32_t length;
-        ReadFile( serial, data, sizeof( data ), &length, 0 );
+        int length = read( serial, data, sizeof( data ) );
 
         if( length <= 0 ) { break; }
     } while( 1 );
