@@ -7,6 +7,7 @@ bit and am extending it to cover basic functionality of a Toshiba SD-B100
 in order to restore DVD functionality to ParaParaParadise 2nd Mix. This
 is a work in progress meant to help people who need to replace obsolete
 players in various formats. Note that this hasn't been tested with sound,
+but in theory this should work fine.
 
 ## Operating Environment
 
@@ -15,6 +16,12 @@ to play any file that omxplayer can, though I've hardcoded it for m4v files.
 I haven't tested sound as the uses for this only require video, but there's
 no reason why it wouldn't work. This is meant to be run on a Raspberry Pi 2
 but should also be portable to any other Linux system.
+
+It assumes it will be run by the startup script for whatever user this is
+run under. It assumes that this user has sudo access without a password.
+It assumes that it can write to the homedir of the user running it. It
+assumes that the scripts and the compiled binary will all exist in the
+homedir of the user running them. It assumes omxplayer has been installed.
 
 ## Current State
 
