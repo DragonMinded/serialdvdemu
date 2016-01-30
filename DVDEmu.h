@@ -11,7 +11,7 @@
 #define DVD_TYPE_TOSHIBA_SD_B100_DVD    3
 
 void verbose_printf( const char * const fmt, ... );
-void exec_shell( const char * shellcmd );
+int exec_shell( const char * shellcmd );
 void PrintHex( const char * prepend, const unsigned char * const data, int length );
 
 #endif

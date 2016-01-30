@@ -81,17 +81,40 @@ void verbose_printf( const char * const fmt, ... )
     }
 }
 
-void exec_shell( const char * shellcmd )
+int exec_shell( const char * shellcmd )
 {
-    if( fork() == 0 )
+    int status = 0;
+    pid_t pid;
+
+    if( (pid = fork()) == 0 )
     {
+        /* Try to execute, return sentinal if failed */
         execl("/bin/bash","/bin/bash","-c",shellcmd,NULL);
+        _exit(127);
     }
     else
     {
-        int status;
-        wait(&status);
+        if( waitpid( pid, &status, 0 ) > 0 )
+        {
+            if (WIFEXITED(status) && !WEXITSTATUS(status))
+            {
+                /* Successfully completed */
+                status = 0;
+            }
+            else if (WIFEXITED(status) && WEXITSTATUS(status))
+            {
+                /* Get exit code */
+                status = WEXITSTATUS(status);
+            }
+        }
+        else
+        {
+            /* Couldn't get program */
+            status = 127;
+        }
     }
+
+    return status;
 }
 
 void PrintHex( const char * prepend, const unsigned char * const data, int length )
