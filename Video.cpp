@@ -78,8 +78,7 @@ void *VideoThread( void *state )
                     /* Stop */
                     if( loaded )
                     {
-                        exec_shell("./control.sh stop &");
-                        sleep( 1 );
+                        exec_shell("./control.sh stop 2> /dev/null");
                         exec_shell("killall dbus-daemon 2> /dev/null");
                         exec_shell("killall omxplayer 2> /dev/null");
                         exec_shell("killall omxplayer.bin 2> /dev/null");
@@ -90,7 +89,7 @@ void *VideoThread( void *state )
                     /* Pause */
                     if( loaded )
                     {
-                        exec_shell("./control.sh pause &");
+                        exec_shell("./control.sh pause 2> /dev/null");
                     }
                     break;
                 case OPCODE_UNPAUSE:
@@ -102,7 +101,7 @@ void *VideoThread( void *state )
                             printf("Sleeping %d ms!\n", private_state->pause_delay);
                             usleep( private_state->pause_delay * 1000 );
                         }
-                        exec_shell("./control.sh pause &");
+                        exec_shell("./control.sh pause 2> /dev/null");
                     }
                     break;
                 case OPCODE_PLAY:
@@ -112,7 +111,15 @@ void *VideoThread( void *state )
                         char syscall[256];
                         sprintf(syscall, "omxplayer -b --no-osd %s%02d.m4v >/dev/null &", private_state->dvd_path, arg);
                         exec_shell(syscall);
-                        sleep( 1 );
+                        /* Wait for it to start */
+                        while( 1 )
+                        {
+                            int exitcode = exec_shell("./control.sh status 2> /dev/null");
+                            if( exitcode == 0 )
+                            {
+                                break;
+                            }
+                        }
                         loaded = 1;
                     }
                     break;
