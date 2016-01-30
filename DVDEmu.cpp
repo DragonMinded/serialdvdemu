@@ -7,13 +7,14 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <curses.h>
 #include "DVDEmu.h"
 #include "Serial.h"
 #include "Video.h"
 #include "Victor_XV-D701.h"
 #include "Toshiba_SD-B100.h"
 
-#define VERBOSE_DEBUG         1
+#define VERBOSE_DEBUG         0
 
 int getDirectoryCount( const char * const directory )
 {
@@ -186,6 +187,21 @@ int main( int argc, char *argv[] )
     {
         fprintf( stderr, "Failed to open serial port '%s'!\n", argv[1] );
         return 1;
+    }
+
+    if( !VERBOSE_DEBUG )
+    {
+        /* Init curses */
+        initscr();
+
+        /* Remove everything on the screen */
+        erase();
+
+        /* Turn off cursor */
+        curs_set( 0 );
+
+        /* Display this */
+        refresh();
     }
 
     /* Ensure we start fresh */
