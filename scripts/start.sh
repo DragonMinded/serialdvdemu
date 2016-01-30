@@ -1,9 +1,14 @@
-# Attempt to auto-start the DVD program if we should.
-if [ -f /home/pi/autostart ];
+#! /bin/bash
+
+HOMEDIR=$(readlink -f ~)
+if [ -f ${HOMEDIR}/autostart ];
 then
-    cd /home/pi/
+    # Attempt to auto-start the DVD program if we should.
+    cd ${HOMEDIR}
+    echo "Autostart file found in ${HOMEDIR}, starting emulator."
     ./mount_first_usb.sh
-    sudo ./dvdemu /dev/ttyUSB0 /home/pi/videos/
+    sudo ./dvdemu /dev/ttyUSB0 ${HOMEDIR}/videos/
 else
-    echo "No autostart file in /home/pi, going to terminal."
+    # Drop to console
+    echo "No autostart file in ${HOMEDIR}, going to terminal."
 fi
