@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#set -x
-
 OMXPLAYER_DBUS_ADDR="/tmp/omxplayerdbus.${USER}"
 OMXPLAYER_DBUS_PID="/tmp/omxplayerdbus.${USER}.pid"
 export DBUS_SESSION_BUS_ADDRESS=`cat $OMXPLAYER_DBUS_ADDR`
