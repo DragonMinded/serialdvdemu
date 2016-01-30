@@ -23,9 +23,6 @@ void ToshibaInit()
 {
     memset( toshiba_state.packet, 0, sizeof(toshiba_state.packet) );
     memset( toshiba_state.response, 0, sizeof(toshiba_state.response) );
-
-    /* Videos seem to be slightly ahead, probably because of built-in delay in original player */
-    VideoSetPauseDelay( 250 );
 }
 
 void ProcessPacket( const char *in, char *out )
