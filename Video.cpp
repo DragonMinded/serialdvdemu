@@ -107,6 +107,9 @@ void *VideoThread( void *state )
                     /* Play */
                     if( !loaded )
                     {
+                        /* TODO: Search for videos based on prepended zero or not.
+                         * Also accept any extension that we support.
+                         */
                         char syscall[256];
                         sprintf(syscall, "omxplayer -b --no-osd %s%02d.m4v >/dev/null &", private_state->dvd_path, arg);
                         exec_shell(syscall);
