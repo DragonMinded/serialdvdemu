@@ -98,7 +98,6 @@ void *VideoThread( void *state )
                     {
                         if( private_state->pause_delay )
                         {
-                            printf("Sleeping %d ms!\n", private_state->pause_delay);
                             usleep( private_state->pause_delay * 1000 );
                         }
                         exec_shell("./control.sh pause 2> /dev/null");

@@ -121,15 +121,15 @@ void PrintHex( const char * prepend, const unsigned char * const data, int lengt
 {
     if( prepend )
     {
-        printf( "%s", prepend );
+        verbose_printf( "%s", prepend );
     }
 
     for( int x = 0; x < length; x++ )
     {
-        printf( "%02X ", data[x] );
+        verbose_printf( "%02X ", data[x] );
     }
 
-    printf( " (Length: %d bytes)\n", length );
+    verbose_printf( " (Length: %d bytes)\n", length );
 }
 
 void PrintInstructions( char * name )

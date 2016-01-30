@@ -7,6 +7,7 @@
 #include "DVDEmu.h"
 #include "Video.h"
 
+/* Only works if VERBOSE_DEBUG is also enabled in DVDEmu.cpp */
 #define PACKET_DEBUG 0
 
 #define PACKET_LEN 256

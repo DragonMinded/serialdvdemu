@@ -6,6 +6,7 @@
 #include "Video.h"
 #include "DVDEmu.h"
 
+/* Only works if VERBOSE_DEBUG is active in DVDEmu.cpp */
 #define PACKET_DEBUG          0
 
 /* Wait for serial */
