@@ -9,6 +9,6 @@ then
     ./mount_first_usb.sh
     sudo ./dvdemu /dev/ttyUSB0 ${HOMEDIR}/videos/
 else
-    # Drop to console
+    # Drop to console.
     echo "No autostart file in ${HOMEDIR}, going to terminal."
 fi
