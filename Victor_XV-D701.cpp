@@ -49,6 +49,38 @@ struct victor_state
     packet_t response;
 } victor_state;
 
+int VictorGetJLIPID()
+{
+    int jlip_id = 0;
+    int count = 0;
+    FILE * fp = fopen( "jlip_id", "r" );
+
+    if( fp )
+    {
+        count = fscanf( fp, "%d", &jlip_id );
+        fclose( fp );
+    }
+
+    if( count != 1 )
+    {
+        /* Default for Twinkle */
+        jlip_id = 33;
+    }
+
+    return jlip_id;
+}
+
+void VictorSetJLIPID( int jlip_id )
+{
+    FILE * fp = fopen( "jlip_id", "w" );
+
+    if( fp )
+    {
+        fprintf( fp, "%d", jlip_id );
+        fclose( fp );
+    }
+}
+
 unsigned char CalcChecksum( const packet_t packet )
 {
 	unsigned char sum = 0x80;
@@ -303,7 +335,8 @@ packet_t HandleDevicePacket( packet_t packet )
             verbose_printf( "Change JLIP ID to %d\n", new_id );
 
             packet_t response = CreatePacket( victor_state.jlip_id, STATUS_OK, NO_RESPONSE );
-            victor_state.jlip_id = new_id; /* TODO: Save this to file */
+            victor_state.jlip_id = new_id;
+            VictorSetJLIPID( new_id );
             return response;
         }
         else
@@ -416,7 +449,7 @@ packet_t HandlePacket( packet_t packet )
 
 void VictorInit( int type )
 {
-    victor_state.jlip_id = 33; /* TODO: Read this from file */
+    victor_state.jlip_id = VictorGetJLIPID();
     victor_state.dvd_type = type;
     memset( victor_state.packet, 0, PACKET_LEN );
     victor_state.response = NULL;
