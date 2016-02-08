@@ -133,6 +133,8 @@ void *VideoThread( void *state )
             usleep( 10000 );
         }
     }
+
+	return NULL;
 }
 
 void VideoThreadAction( unsigned int opcode, unsigned int argument )
