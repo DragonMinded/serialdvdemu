@@ -134,7 +134,7 @@ void *VideoThread( void *state )
         }
     }
 
-	return NULL;
+    return NULL;
 }
 
 void VideoThreadAction( unsigned int opcode, unsigned int argument )
