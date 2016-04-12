@@ -111,7 +111,7 @@ void *VideoThread( void *state )
                          * Also accept any extension that we support.
                          */
                         char syscall[256];
-                        sprintf(syscall, "omxplayer -b --no-osd %s%02d.m4v > /dev/null 2> /dev/null &", private_state->dvd_path, arg);
+                        sprintf(syscall, "omxplayer --loop -b --no-osd %s%02d.m4v > /dev/null 2> /dev/null &", private_state->dvd_path, arg);
                         exec_shell(syscall);
                         /* Wait for it to start */
                         while( 1 )
@@ -133,6 +133,8 @@ void *VideoThread( void *state )
             usleep( 10000 );
         }
     }
+
+    return NULL;
 }
 
 void VideoThreadAction( unsigned int opcode, unsigned int argument )
